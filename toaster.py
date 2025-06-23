@@ -64,6 +64,7 @@ def main():
     frame_buffer = deque()
     timestamp_buffer = deque()
     clip_count = 1
+    f8_last_state = False
 
     print(f"Toaster is running (no GUI). Press F8 to save the last {CLIP_LENGTH} seconds. Ctrl+C to exit.")
     print(f"Clips will be saved to: {SAVE_FOLDER}")
@@ -80,16 +81,16 @@ def main():
                 frame_buffer.popleft()
                 timestamp_buffer.popleft()
 
-            # Listen for hotkey
-            if keyboard.is_pressed("f8"):
-                # Actual FPS for the segment
+            # Edge detection for F8 press
+            f8_now = keyboard.is_pressed("f8")
+            if f8_now and not f8_last_state:
+                # Only trigger once per actual press
                 if len(timestamp_buffer) > 1:
                     duration = timestamp_buffer[-1] - timestamp_buffer[0]
                     actual_fps = len(timestamp_buffer) / duration if duration > 0 else FPS
                 else:
                     actual_fps = FPS
                 print(f"Saving {len(frame_buffer)} frames at {actual_fps:.2f} FPS")
-                # File name and save
                 if not os.path.exists(SAVE_FOLDER):
                     os.makedirs(SAVE_FOLDER)
                 filename = os.path.join(SAVE_FOLDER, f"clip_{clip_count:02d}.mp4")
@@ -101,7 +102,7 @@ def main():
                 print(f"Saved to {filename}")
                 show_popup(filename)
                 clip_count += 1
-                time.sleep(1)  # debounce
+            f8_last_state = f8_now
 
             time.sleep(max(0, 1/FPS - (time.time() - now)))
         except KeyboardInterrupt:
@@ -109,6 +110,7 @@ def main():
             break
         except Exception as e:
             print("Error:", e)
+
 
 if __name__ == "__main__":
     main()
